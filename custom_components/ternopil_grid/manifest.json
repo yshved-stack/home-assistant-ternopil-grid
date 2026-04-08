@@ -1,0 +1,11 @@
+{
+  "domain": "ternopil_grid",
+  "name": "Ternopil Grid Schedule",
+  "codeowners": ["@yshved-stack"],
+  "config_flow": true,
+  "documentation": "https://github.com/yshved-stack/home-assistant-ternopil-grid",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/yshved-stack/home-assistant-ternopil-grid/issues",
+  "requirements": [],
+  "version": "1.2.0"
+}

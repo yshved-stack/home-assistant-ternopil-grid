@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ternopil Grid Schedule",
+        "description": "Знайдіть вулицю та, за потреби, вкажіть номер будинку.",
+        "data": {
+          "street_query": "Пошук вулиці",
+          "house_number": "Номер будинку"
+        }
+      },
+      "pick_street": {
+        "title": "Вибір вулиці",
+        "description": "Оберіть потрібну вулицю зі списку.",
+        "data": {
+          "street_label": "Вулиця"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Опції",
+        "menu_options": {
+          "street": "Змінити вулицю",
+          "ping": "Налаштування ping"
+        }
+      },
+      "street": {
+        "title": "Змінити вулицю",
+        "description": "Знайдіть нову вулицю та, за потреби, оновіть номер будинку.",
+        "data": {
+          "street_query": "Пошук вулиці",
+          "house_number": "Номер будинку"
+        }
+      },
+      "pick_street": {
+        "title": "Вибір вулиці",
+        "description": "Оберіть потрібну вулицю зі списку.",
+        "data": {
+          "street_label": "Вулиця"
+        }
+      },
+        "ping": {
+          "title": "Налаштування ping",
+          "description": "Налаштуйте пристрій-пробу, IP/порт і перевірку фактичної наявності світла.",
+          "data": {
+            "ping_enabled": "Увімкнути перевірку (ping)",
+            "ping_entity_id": "Пристрій/сутність для проби",
+            "ping_ip": "IP-адреса для перевірки",
+            "ping_method": "Метод перевірки",
+            "ping_port": "Порт перевірки",
+            "ping_timeout": "Таймаут (с)",
+            "ping_interval": "Інтервал (с)",
+            "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
+            "ping_http_path": "HTTP шлях",
+            "ping_history_hours": "Вікно історії (до 24 годин)"
+          }
+        }
+      }
+    }
+  }

@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ternopil Grid Schedule",
+        "description": "Search for a street and optionally enter a house number.",
+        "data": {
+          "street_query": "Street search",
+          "house_number": "House number"
+        }
+      },
+      "pick_street": {
+        "title": "Pick street",
+        "description": "Choose the matching street.",
+        "data": {
+          "street_label": "Street"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "menu_options": {
+          "street": "Change street",
+          "ping": "Ping settings"
+        }
+      },
+      "street": {
+        "title": "Change street",
+        "description": "Search for a new street and optionally update the house number.",
+        "data": {
+          "street_query": "Street search",
+          "house_number": "House number"
+        }
+      },
+      "pick_street": {
+        "title": "Pick street",
+        "description": "Choose the matching street.",
+        "data": {
+          "street_label": "Street"
+        }
+      },
+        "ping": {
+          "title": "Ping settings",
+          "description": "Configure the probe device, IP/port, and power presence check.",
+          "data": {
+            "ping_enabled": "Enable power ping",
+            "ping_entity_id": "Probe device/entity",
+            "ping_ip": "Ping target IP",
+            "ping_method": "Ping method",
+            "ping_port": "Probe port",
+            "ping_timeout": "Timeout (s)",
+            "ping_interval": "Interval (s)",
+            "ping_http_ssl": "Use HTTPS for HTTP check",
+            "ping_http_path": "HTTP path",
+            "ping_history_hours": "History window (up to 24h)"
+          }
+        }
+      }
+    }
+  }
