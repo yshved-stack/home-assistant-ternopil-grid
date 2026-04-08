@@ -6,8 +6,9 @@ from typing import Any, Iterable
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_utc_time_change
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -262,6 +263,15 @@ def _local_hhmm(ts: float) -> str:
     return dt_util.as_local(dt_util.utc_from_timestamp(ts)).strftime("%H:%M")
 
 
+def _coordinator_datetime(value: Any) -> datetime | None:
+    return value if isinstance(value, datetime) else None
+
+
+def _coordinator_iso(value: Any) -> str | None:
+    dt_value = _coordinator_datetime(value)
+    return dt_value.isoformat() if dt_value is not None else None
+
+
 def _context_cache_key(entity: Any, now_ts: int) -> tuple[Any, ...]:
     coordinator = getattr(entity, "coordinator", None)
     ping = getattr(entity, "_ping", None)
@@ -285,6 +295,17 @@ def _context_cache_key(entity: Any, now_ts: int) -> tuple[Any, ...]:
         ping_updated.isoformat() if ping_updated is not None else None,
         bool(getattr(coordinator, "last_update_success", False)),
         bool(getattr(ping, "last_update_success", False)) if ping is not None else None,
+        _coordinator_iso(getattr(coordinator, "_tg_last_success_at", None)),
+        _coordinator_iso(getattr(coordinator, "_tg_last_failure_at", None)),
+        str(getattr(coordinator, "_tg_last_error", "") or ""),
+        int(getattr(coordinator, "_tg_refresh_count", 0) or 0),
+        int(getattr(coordinator, "_tg_empty_count", 0) or 0),
+        _coordinator_iso(getattr(ping, "_tg_last_success_at", None)) if ping is not None else None,
+        _coordinator_iso(getattr(ping, "_tg_last_failure_at", None)) if ping is not None else None,
+        str(getattr(ping, "_tg_last_error", "") or "") if ping is not None else "",
+        int(getattr(ping, "_tg_success_count", 0) or 0) if ping is not None else 0,
+        int(getattr(ping, "_tg_failure_count", 0) or 0) if ping is not None else 0,
+        int(getattr(ping, "_tg_consecutive_failures", 0) or 0) if ping is not None else 0,
         street_id,
         street_name,
         house_number,
@@ -299,16 +320,16 @@ def _build_chart_svg(
     now_ts: int,
 ) -> str:
     width = 1000
-    height = 304
+    height = 350
     left = 34
     right = 34
     content_width = width - left - right
     slot_gap = 4
     slot_width = (content_width - ((CHART_TOTAL_SLOTS - 1) * slot_gap)) / CHART_TOTAL_SLOTS
     planned_y = 82
-    actual_y = 236
+    actual_y = 270
     pill_height = 48
-    actual_height = 34
+    actual_height = pill_height
     chart_end_ts = chart_start_ts + (CHART_TOTAL_SLOTS * SLOT_SECONDS)
     marker_ratio = max(0.0, min(1.0, (now_ts - chart_start_ts) / float(chart_end_ts - chart_start_ts)))
     marker_x = left + (marker_ratio * content_width)
@@ -334,7 +355,7 @@ def _build_chart_svg(
         '<rect width="4" height="12" fill="#4d4f59" />',
         "</pattern>",
         "</defs>",
-        '<rect x="0" y="0" width="1000" height="304" rx="28" ry="28" fill="#262730" />',
+        f'<rect x="0" y="0" width="{width}" height="{height}" rx="28" ry="28" fill="#262730" />',
         '<text x="30" y="52" font-size="28" font-family="Georgia, Times New Roman, serif" fill="#eadfd2">Planned</text>',
     ]
 
@@ -373,11 +394,11 @@ def _build_chart_svg(
 
     parts.extend(
         [
-            f'<line x1="{marker_x:.3f}" y1="68" x2="{marker_x:.3f}" y2="274" stroke="#7fa1ff" stroke-width="2" />',
+            f'<line x1="{marker_x:.3f}" y1="68" x2="{marker_x:.3f}" y2="322" stroke="#7fa1ff" stroke-width="2" />',
             f'<polygon points="{marker_x - 8:.3f},68 {marker_x + 8:.3f},68 {marker_x:.3f},84" fill="#7fa1ff" />',
             f'<rect x="{marker_x + 6:.3f}" y="46" width="112" height="36" rx="10" ry="10" fill="#1e1f26" stroke="#cbc2b8" stroke-width="1.3" />',
             f'<text x="{marker_x + 62:.3f}" y="70" text-anchor="middle" font-size="18" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="#f4ece3">{_local_hhmm(now_ts)}</text>',
-            '<text x="30" y="224" font-size="18" font-family="Georgia, Times New Roman, serif" fill="#d7c6b8">Actual (inferred vs schedule)</text>',
+            '<text x="30" y="246" font-size="22" font-family="Georgia, Times New Roman, serif" fill="#eadfd2">Observed Power vs Schedule</text>',
         ]
     )
 
@@ -473,6 +494,13 @@ def _build_context(entity: "TernopilScheduleSensor") -> dict[str, Any]:
     source_updated_at = None
     if getattr(entity.coordinator, "last_update_success_time", None) is not None:
         source_updated_at = entity.coordinator.last_update_success_time.isoformat()
+    schedule_last_success_dt = _coordinator_datetime(getattr(entity.coordinator, "_tg_last_success_at", None))
+    schedule_last_failure_dt = _coordinator_datetime(getattr(entity.coordinator, "_tg_last_failure_at", None))
+    schedule_last_success = _coordinator_iso(schedule_last_success_dt)
+    schedule_last_failure = _coordinator_iso(schedule_last_failure_dt)
+    schedule_last_error = str(getattr(entity.coordinator, "_tg_last_error", "") or "")
+    schedule_refresh_count = int(getattr(entity.coordinator, "_tg_refresh_count", 0) or 0)
+    schedule_empty_count = int(getattr(entity.coordinator, "_tg_empty_count", 0) or 0)
 
     street_name = str(entity.entry.data.get(CONF_STREET_NAME, "") or "")
     house_number = str(entity.entry.data.get(CONF_HOUSE_NUMBER, "") or "")
@@ -486,6 +514,37 @@ def _build_context(entity: "TernopilScheduleSensor") -> dict[str, Any]:
         "red": "planned_outage",
         "yellow": "limited",
     }.get(current_color, "unknown")
+    ping_last_success_dt = _coordinator_datetime(getattr(entity._ping, "_tg_last_success_at", None)) if entity._ping is not None else None
+    ping_last_failure_dt = _coordinator_datetime(getattr(entity._ping, "_tg_last_failure_at", None)) if entity._ping is not None else None
+    ping_last_success = _coordinator_iso(ping_last_success_dt)
+    ping_last_failure = _coordinator_iso(ping_last_failure_dt)
+    ping_last_error = str(getattr(entity._ping, "_tg_last_error", "") or "") if entity._ping is not None else ""
+    ping_success_count = int(getattr(entity._ping, "_tg_success_count", 0) or 0) if entity._ping is not None else 0
+    ping_failure_count = int(getattr(entity._ping, "_tg_failure_count", 0) or 0) if entity._ping is not None else 0
+    ping_consecutive_failures = int(getattr(entity._ping, "_tg_consecutive_failures", 0) or 0) if entity._ping is not None else 0
+
+    schedule_error_active = bool(
+        schedule_last_error and (
+            schedule_last_success_dt is None
+            or (schedule_last_failure_dt is not None and schedule_last_failure_dt >= schedule_last_success_dt)
+        )
+    )
+    ping_error_active = bool(
+        ping_last_error and ping_last_error != "probe returned false" and (
+            ping_last_success_dt is None
+            or (ping_last_failure_dt is not None and ping_last_failure_dt >= ping_last_success_dt)
+        )
+    )
+    if schedule_error_active and ping_error_active:
+        health_status = "degraded"
+    elif schedule_error_active:
+        health_status = "schedule_error"
+    elif ping_error_active:
+        health_status = "ping_error"
+    elif ping_disabled:
+        health_status = "ping_disabled"
+    else:
+        health_status = "ok"
 
     events = [
         {"kind": "current_state", "at": now.isoformat(), "value": current_state},
@@ -544,9 +603,23 @@ def _build_context(entity: "TernopilScheduleSensor") -> dict[str, Any]:
         "house_number": house_number,
         "source_updated_at": source_updated_at,
         "api_ok": api_ok,
+        "health_status": health_status,
+        "schedule_last_success": schedule_last_success,
+        "schedule_last_failure": schedule_last_failure,
+        "schedule_last_error": schedule_last_error,
+        "schedule_refresh_count": schedule_refresh_count,
+        "schedule_empty_count": schedule_empty_count,
+        "ping_last_success": ping_last_success,
+        "ping_last_failure": ping_last_failure,
+        "ping_last_error": ping_last_error,
+        "ping_success_count": ping_success_count,
+        "ping_failure_count": ping_failure_count,
+        "ping_consecutive_failures": ping_consecutive_failures,
         "next_off_start": _iso(next_off_start),
         "next_off_end": _iso(next_off_end),
         "next_on_start": _iso(next_on_start),
+        "current_segment_start": _iso(current_seg.get("start_ts")) if current_seg else None,
+        "current_segment_end": _iso(current_seg.get("end_ts")) if current_seg else None,
         "current_color": current_color,
         "current_state": current_state,
         "events": events,
@@ -566,6 +639,16 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(key="off_today", name=f"{ENTITY_PREFIX} Off Today", icon="mdi:calendar-today", native_unit_of_measurement="min"),
     SensorEntityDescription(key="off_tomorrow", name=f"{ENTITY_PREFIX} Off Tomorrow", icon="mdi:calendar", native_unit_of_measurement="min"),
+    SensorEntityDescription(key="health_status", name=f"{ENTITY_PREFIX} Health Status", icon="mdi:heart-pulse"),
+    SensorEntityDescription(key="schedule_last_success", name=f"{ENTITY_PREFIX} Schedule Last Success", device_class="timestamp", icon="mdi:calendar-check"),
+    SensorEntityDescription(key="schedule_last_failure", name=f"{ENTITY_PREFIX} Schedule Last Failure", device_class="timestamp", icon="mdi:calendar-alert"),
+    SensorEntityDescription(key="ping_last_success", name=f"{ENTITY_PREFIX} Probe Last Success", device_class="timestamp", icon="mdi:lan-check"),
+    SensorEntityDescription(key="ping_last_failure", name=f"{ENTITY_PREFIX} Probe Last Failure", device_class="timestamp", icon="mdi:lan-disconnect"),
+    SensorEntityDescription(
+        key="ping_consecutive_failures",
+        name=f"{ENTITY_PREFIX} Probe Consecutive Failures",
+        icon="mdi:counter",
+    ),
     SensorEntityDescription(key="activity_log", name=f"{ENTITY_PREFIX} Activity Log", icon="mdi:clipboard-text-clock-outline"),
 )
 
@@ -600,6 +683,22 @@ class TernopilScheduleSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = description.name
         self._attr_icon = description.icon
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_track_utc_time_change(
+                self.hass,
+                self._handle_minute_tick,
+                second=0,
+            )
+        )
+
+    @callback
+    def _handle_minute_tick(self, _now: datetime) -> None:
+        # Refresh entity state from cached coordinator data every minute so
+        # the chart marker and countdown advance without extra API fetches.
+        self.async_write_ha_state()
+
     @property
     def native_value(self) -> Any:
         attrs = self.extra_state_attributes
@@ -614,6 +713,18 @@ class TernopilScheduleSensor(CoordinatorEntity, SensorEntity):
             return attrs.get("off_today")
         if key == "off_tomorrow":
             return attrs.get("off_tomorrow")
+        if key == "health_status":
+            return attrs.get("health_status")
+        if key == "schedule_last_success":
+            return _coordinator_datetime(getattr(self.coordinator, "_tg_last_success_at", None))
+        if key == "schedule_last_failure":
+            return _coordinator_datetime(getattr(self.coordinator, "_tg_last_failure_at", None))
+        if key == "ping_last_success":
+            return _coordinator_datetime(getattr(self._ping, "_tg_last_success_at", None))
+        if key == "ping_last_failure":
+            return _coordinator_datetime(getattr(self._ping, "_tg_last_failure_at", None))
+        if key == "ping_consecutive_failures":
+            return attrs.get("ping_consecutive_failures")
         if key == "activity_log":
             return attrs.get("current_state")
         return None
@@ -632,6 +743,42 @@ class TernopilScheduleSensor(CoordinatorEntity, SensorEntity):
                 "next_on_start": context.get("next_on_start"),
                 "source_updated_at": context.get("source_updated_at"),
                 "api_ok": context.get("api_ok"),
+            }
+        if self.entity_description.key == "health_status":
+            return {
+                "health_status": context.get("health_status"),
+                "schedule_last_success": context.get("schedule_last_success"),
+                "schedule_last_failure": context.get("schedule_last_failure"),
+                "schedule_last_error": context.get("schedule_last_error"),
+                "schedule_refresh_count": context.get("schedule_refresh_count"),
+                "schedule_empty_count": context.get("schedule_empty_count"),
+                "ping_last_success": context.get("ping_last_success"),
+                "ping_last_failure": context.get("ping_last_failure"),
+                "ping_last_error": context.get("ping_last_error"),
+                "ping_success_count": context.get("ping_success_count"),
+                "ping_failure_count": context.get("ping_failure_count"),
+                "ping_consecutive_failures": context.get("ping_consecutive_failures"),
+                "ping_target_display": context.get("ping_target_display"),
+                "source_updated_at": context.get("source_updated_at"),
+                "api_ok": context.get("api_ok"),
+            }
+        if self.entity_description.key in {
+            "schedule_last_success",
+            "schedule_last_failure",
+            "ping_last_success",
+            "ping_last_failure",
+            "ping_consecutive_failures",
+        }:
+            return {
+                "health_status": context.get("health_status"),
+                "schedule_last_error": context.get("schedule_last_error"),
+                "ping_last_error": context.get("ping_last_error"),
+                "schedule_refresh_count": context.get("schedule_refresh_count"),
+                "schedule_empty_count": context.get("schedule_empty_count"),
+                "ping_success_count": context.get("ping_success_count"),
+                "ping_failure_count": context.get("ping_failure_count"),
+                "ping_consecutive_failures": context.get("ping_consecutive_failures"),
+                "ping_target_display": context.get("ping_target_display"),
             }
         return context
 

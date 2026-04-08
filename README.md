@@ -84,7 +84,7 @@ Add this repo to HACS as a custom integration repository:
 ## Releases
 
 - release tags follow the integration version from `custom_components/ternopil_grid/manifest.json`
-- current first public release tag: `v1.2.0`
+- current public release tag: `v1.2.1`
 - human-readable release notes live in [CHANGELOG.md](./CHANGELOG.md)
 
 ## Notes

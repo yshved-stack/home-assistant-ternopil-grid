@@ -37,6 +37,7 @@ CONF_PING_ENTITY_ID = "ping_entity_id"
 CONF_PING_HTTP_SSL = "ping_http_ssl"
 CONF_PING_HTTP_PATH = "ping_http_path"
 CONF_PING_HISTORY_HOURS = "ping_history_hours"
+CONF_DEBUG_LOGGING = "debug_logging"
 
 # Ping defaults
 DEFAULT_PING_ENABLED = False
@@ -48,6 +49,7 @@ DEFAULT_PING_TIMEOUT = 1.0  # seconds
 DEFAULT_PING_HTTP_SSL = False
 DEFAULT_PING_HTTP_PATH = "/"
 DEFAULT_PING_HISTORY_HOURS = 24
+DEFAULT_DEBUG_LOGGING = False
 MAX_PING_HISTORY_HOURS = 24
 
 # hass.data keys

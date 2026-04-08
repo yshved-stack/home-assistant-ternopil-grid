@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_utc_time_change
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -81,6 +82,20 @@ class TGPlannedOutageBinary(CoordinatorEntity, BinarySensorEntity):
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_track_utc_time_change(
+                self.hass,
+                self._handle_minute_tick,
+                second=0,
+            )
+        )
+
+    @callback
+    def _handle_minute_tick(self, _now: datetime) -> None:
+        self.async_write_ha_state()
+
     @property
     def is_on(self) -> bool:
         return _current_planned_color(self.coordinator.data or []) == "red"
@@ -91,6 +106,8 @@ class TGPlannedOutageBinary(CoordinatorEntity, BinarySensorEntity):
         return {
             "current_group": context.get("current_group"),
             "current_color": context.get("current_color"),
+            "current_segment_start": context.get("current_segment_start"),
+            "current_segment_end": context.get("current_segment_end"),
             "next_off_start": context.get("next_off_start"),
             "next_off_end": context.get("next_off_end"),
             "next_on_start": context.get("next_on_start"),

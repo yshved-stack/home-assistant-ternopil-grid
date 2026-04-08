@@ -3,17 +3,10 @@
     "step": {
       "user": {
         "title": "Ternopil Grid Schedule",
-        "description": "Search for a street and optionally enter a house number.",
+        "description": "Choose a street from the searchable list and optionally enter a house number.",
         "data": {
-          "street_query": "Street search",
+          "street_id": "Street",
           "house_number": "House number"
-        }
-      },
-      "pick_street": {
-        "title": "Pick street",
-        "description": "Choose the matching street.",
-        "data": {
-          "street_label": "Street"
         }
       }
     }
@@ -24,40 +17,68 @@
         "title": "Options",
         "menu_options": {
           "street": "Change street",
-          "ping": "Ping settings"
+          "ping": "Ping settings",
+          "diagnostics": "Diagnostics & logging"
         }
       },
       "street": {
         "title": "Change street",
-        "description": "Search for a new street and optionally update the house number.",
+        "description": "Choose a new street from the searchable list and optionally update the house number.",
         "data": {
-          "street_query": "Street search",
+          "street_id": "Street",
           "house_number": "House number"
         }
       },
-      "pick_street": {
-        "title": "Pick street",
-        "description": "Choose the matching street.",
+      "diagnostics": {
+        "title": "Diagnostics & logging",
+        "description": "Turn on detailed ternopil_grid debug logging for live troubleshooting.",
         "data": {
-          "street_label": "Street"
+          "debug_logging": "Enable detailed debug logging"
         }
       },
-        "ping": {
-          "title": "Ping settings",
-          "description": "Configure the probe device, IP/port, and power presence check.",
-          "data": {
-            "ping_enabled": "Enable power ping",
-            "ping_entity_id": "Probe device/entity",
-            "ping_ip": "Ping target IP",
-            "ping_method": "Ping method",
-            "ping_port": "Probe port",
-            "ping_timeout": "Timeout (s)",
-            "ping_interval": "Interval (s)",
-            "ping_http_ssl": "Use HTTPS for HTTP check",
-            "ping_http_path": "HTTP path",
-            "ping_history_hours": "History window (up to 24h)"
-          }
+      "ping": {
+        "title": "Ping settings",
+        "description": "Choose how the live power probe should resolve its target.",
+        "data": {
+          "ping_enabled": "Enable power ping",
+          "ping_target_source": "Target source",
+          "ping_method": "Ping method",
+          "ping_timeout": "Timeout (s)",
+          "ping_interval": "Interval (s)",
+          "ping_history_hours": "History window (up to 24h)"
+        }
+      },
+      "ping_entity": {
+        "title": "Ping settings",
+        "description": "Select the Home Assistant entity that should be used as the live power probe target.",
+        "data": {
+          "ping_entity_id": "Probe device/entity",
+          "ping_port": "Probe port",
+          "ping_http_ssl": "Use HTTPS for HTTP check",
+          "ping_http_path": "HTTP path"
+        }
+      },
+      "ping_manual": {
+        "title": "Ping settings",
+        "description": "Enter the manual target address used for the live power probe.",
+        "data": {
+          "ping_ip": "Ping target IP",
+          "ping_port": "Probe port",
+          "ping_http_ssl": "Use HTTPS for HTTP check",
+          "ping_http_path": "HTTP path"
         }
       }
     }
+  },
+  "selector": {
+    "ping_target_source": {
+      "options": {
+        "entity": "Probe device / entity",
+        "custom_ip": "Manual / custom IP"
+      }
+    }
+  },
+  "error": {
+    "invalid_target_source": "Entity status method requires a probe device/entity target."
   }
+}

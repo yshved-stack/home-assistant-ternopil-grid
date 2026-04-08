@@ -3,17 +3,10 @@
     "step": {
       "user": {
         "title": "Ternopil Grid Schedule",
-        "description": "Знайдіть вулицю та, за потреби, вкажіть номер будинку.",
+        "description": "Оберіть вулицю зі списку з пошуком і, за потреби, вкажіть номер будинку.",
         "data": {
-          "street_query": "Пошук вулиці",
+          "street_id": "Вулиця",
           "house_number": "Номер будинку"
-        }
-      },
-      "pick_street": {
-        "title": "Вибір вулиці",
-        "description": "Оберіть потрібну вулицю зі списку.",
-        "data": {
-          "street_label": "Вулиця"
         }
       }
     }
@@ -24,40 +17,68 @@
         "title": "Опції",
         "menu_options": {
           "street": "Змінити вулицю",
-          "ping": "Налаштування ping"
+          "ping": "Налаштування ping",
+          "diagnostics": "Діагностика і логування"
         }
       },
       "street": {
         "title": "Змінити вулицю",
-        "description": "Знайдіть нову вулицю та, за потреби, оновіть номер будинку.",
+        "description": "Оберіть нову вулицю зі списку з пошуком і, за потреби, оновіть номер будинку.",
         "data": {
-          "street_query": "Пошук вулиці",
+          "street_id": "Вулиця",
           "house_number": "Номер будинку"
         }
       },
-      "pick_street": {
-        "title": "Вибір вулиці",
-        "description": "Оберіть потрібну вулицю зі списку.",
+      "diagnostics": {
+        "title": "Діагностика і логування",
+        "description": "Увімкніть детальне debug-логування ternopil_grid для живої діагностики.",
         "data": {
-          "street_label": "Вулиця"
+          "debug_logging": "Увімкнути детальне debug-логування"
         }
       },
-        "ping": {
-          "title": "Налаштування ping",
-          "description": "Налаштуйте пристрій-пробу, IP/порт і перевірку фактичної наявності світла.",
-          "data": {
-            "ping_enabled": "Увімкнути перевірку (ping)",
-            "ping_entity_id": "Пристрій/сутність для проби",
-            "ping_ip": "IP-адреса для перевірки",
-            "ping_method": "Метод перевірки",
-            "ping_port": "Порт перевірки",
-            "ping_timeout": "Таймаут (с)",
-            "ping_interval": "Інтервал (с)",
-            "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
-            "ping_http_path": "HTTP шлях",
-            "ping_history_hours": "Вікно історії (до 24 годин)"
-          }
+      "ping": {
+        "title": "Налаштування ping",
+        "description": "Оберіть, як live-проба має визначати ціль для перевірки наявності світла.",
+        "data": {
+          "ping_enabled": "Увімкнути перевірку (ping)",
+          "ping_target_source": "Джерело цілі",
+          "ping_method": "Метод перевірки",
+          "ping_timeout": "Таймаут (с)",
+          "ping_interval": "Інтервал (с)",
+          "ping_history_hours": "Вікно історії (до 24 годин)"
+        }
+      },
+      "ping_entity": {
+        "title": "Налаштування ping",
+        "description": "Оберіть Home Assistant пристрій/сутність, яку слід використовувати як live-пробу.",
+        "data": {
+          "ping_entity_id": "Пристрій/сутність для проби",
+          "ping_port": "Порт перевірки",
+          "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
+          "ping_http_path": "HTTP шлях"
+        }
+      },
+      "ping_manual": {
+        "title": "Налаштування ping",
+        "description": "Вкажіть manual IP-адресу для live-проби наявності світла.",
+        "data": {
+          "ping_ip": "IP-адреса для перевірки",
+          "ping_port": "Порт перевірки",
+          "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
+          "ping_http_path": "HTTP шлях"
         }
       }
     }
+  },
+  "selector": {
+    "ping_target_source": {
+      "options": {
+        "entity": "Пристрій / сутність",
+        "custom_ip": "Manual / custom IP"
+      }
+    }
+  },
+  "error": {
+    "invalid_target_source": "Метод entity status вимагає вибраний пристрій/сутність для проби."
   }
+}

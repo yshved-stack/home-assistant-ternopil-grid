@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 from .api import fetch_building_group, fetch_schedule
 from .const import (
     CONF_CITY_ID,
+    CONF_DEBUG_LOGGING,
     CONF_GROUP,
     CONF_PING_ENABLED,
     CONF_PING_ENTITY_ID,
@@ -167,6 +168,11 @@ class TernopilScheduleCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self.group = str(entry.data.get(CONF_GROUP, "") or "")
 
         self._last_segs: list[dict[str, Any]] = []
+        self._tg_last_success_at: datetime | None = None
+        self._tg_last_failure_at: datetime | None = None
+        self._tg_last_error: str = ""
+        self._tg_refresh_count = 0
+        self._tg_empty_count = 0
 
         super().__init__(
             hass,
@@ -176,6 +182,17 @@ class TernopilScheduleCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
 
     async def _async_update_data(self) -> list[dict[str, Any]]:
+        def mark_failure(message: str, *, empty: bool = False) -> None:
+            self._tg_last_failure_at = dt_util.utcnow()
+            self._tg_last_error = message
+            if empty:
+                self._tg_empty_count += 1
+
+        def mark_success() -> None:
+            self._tg_last_success_at = dt_util.utcnow()
+            self._tg_last_error = ""
+            self._tg_refresh_count += 1
+
         # allow street/group changes via config entry state
         street_id = int(self.entry.options.get(CONF_STREET_ID, self.street_id) or 0)
         if not street_id:
@@ -199,6 +216,7 @@ class TernopilScheduleCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 data[CONF_GROUP] = grp
                 self.hass.config_entries.async_update_entry(self.entry, data=data)
             else:
+                mark_failure(f"group autodetect failed for street_id={self.street_id}")
                 _LOGGER.warning("Group autodetect failed for street_id=%s; keeping last data", self.street_id)
                 return self._last_segs
 
@@ -210,11 +228,13 @@ class TernopilScheduleCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 group=self.group,
             )
         except Exception as err:  # noqa: BLE001
+            mark_failure(str(err))
             _LOGGER.warning("Schedule fetch failed: %s; keeping last data", err)
             return self._last_segs
 
         days = result.get("days") or []
         if result.get("empty") or not days:
+            mark_failure("schedule empty", empty=True)
             _LOGGER.warning("Schedule empty; keeping last data")
             return self._last_segs
 
@@ -228,10 +248,20 @@ class TernopilScheduleCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             all_bins.extend(_build_day_bins(day0_local, times))
 
         if not all_bins:
+            mark_failure("schedule bins empty", empty=True)
             return self._last_segs
 
         all_bins.sort(key=lambda x: x[0])
         self._last_segs = _merge_bins(all_bins)
+        mark_success()
+        if bool(self.entry.options.get(CONF_DEBUG_LOGGING, False)):
+            _LOGGER.debug(
+                "Schedule refresh ok: street_id=%s group=%s segments=%s refreshes=%s",
+                self.street_id,
+                self.group,
+                len(self._last_segs),
+                self._tg_refresh_count,
+            )
         return self._last_segs
 
 
@@ -269,6 +299,12 @@ class TernopilPingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
         self._history_slots = max(1, min(SLOTS_PER_DAY, int((self._history_hours * 3600) // self._slot_seconds)))
+        self._tg_last_success_at: datetime | None = None
+        self._tg_last_failure_at: datetime | None = None
+        self._tg_last_error: str = ""
+        self._tg_success_count = 0
+        self._tg_failure_count = 0
+        self._tg_consecutive_failures = 0
 
         from collections import deque
         self._history: deque[tuple[int, bool]] = deque(maxlen=self._history_slots)
@@ -293,6 +329,19 @@ class TernopilPingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return [{"ts": ts, "start_ts": ts, "end_ts": ts + self._slot_seconds, "ok": ok} for ts, ok in self._history]
 
     async def _async_update_data(self) -> dict[str, Any]:
+        def mark_success() -> None:
+            self._tg_last_success_at = dt_util.utcnow()
+            self._tg_last_error = ""
+            self._tg_success_count += 1
+            self._tg_consecutive_failures = 0
+
+        def mark_failure(message: str, *, count_failure: bool) -> None:
+            self._tg_last_failure_at = dt_util.utcnow()
+            self._tg_last_error = message
+            if count_failure:
+                self._tg_failure_count += 1
+                self._tg_consecutive_failures += 1
+
         opts = self.entry.options
 
         self.ping_method = str(opts.get(CONF_PING_METHOD, DEFAULT_PING_METHOD)).lower().strip()
@@ -350,6 +399,7 @@ class TernopilPingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return {**base, "ok": None, "disabled": True, "cutoff_ts": cutoff_ts, "history_slots": self.history_slots()}
 
         if not effective_ip and self.ping_method != "entity":
+            mark_failure("ping_ip not set", count_failure=False)
             return {**base, "ok": None, "disabled": False, "cutoff_ts": cutoff_ts, "error": "ping_ip not set", "history_slots": self.history_slots()}
 
         ok: bool | None = None
@@ -360,6 +410,7 @@ class TernopilPingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if self.ping_method == "entity":
                     ent_id = str(opts.get(CONF_PING_ENTITY_ID, "") or "").strip()
                     if not ent_id:
+                        mark_failure("ping_entity_id not set", count_failure=False)
                         return {**base, "ok": None, "disabled": False, "cutoff_ts": cutoff_ts, "error": "ping_entity_id not set", "history_slots": self.history_slots()}
                     st = self.hass.states.get(ent_id)
                     ok = st is not None and st.state not in ("unknown", "unavailable", "")
@@ -387,8 +438,24 @@ class TernopilPingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if attempt < 2:
                     await asyncio.sleep(1 * (2**attempt))
                     continue
+                mark_failure(str(err), count_failure=True)
                 raise UpdateFailed(str(err)) from err
 
         now_ts = dt_util.utcnow().timestamp()
         self._push_history(self._bucket_ts(now_ts), bool(ok))
+        if bool(ok):
+            mark_success()
+        else:
+            mark_failure("probe returned false", count_failure=True)
+        if bool(self.entry.options.get(CONF_DEBUG_LOGGING, False)):
+            _LOGGER.debug(
+                "Probe refresh: method=%s ip=%s entity=%s ok=%s consecutive_failures=%s successes=%s failures=%s",
+                self.ping_method,
+                effective_ip,
+                target_entity_id,
+                bool(ok),
+                self._tg_consecutive_failures,
+                self._tg_success_count,
+                self._tg_failure_count,
+            )
         return {**base, "ok": bool(ok), "disabled": False, "cutoff_ts": cutoff_ts, "history_slots": self.history_slots()}
