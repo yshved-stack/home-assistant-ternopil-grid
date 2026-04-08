@@ -17,7 +17,9 @@
         "title": "Options",
         "menu_options": {
           "street": "Change street",
-          "ping": "Ping settings",
+          "ping": "Probe behavior",
+          "ping_entity": "Device probe target",
+          "ping_manual": "Manual IP target",
           "diagnostics": "Diagnostics & logging"
         }
       },
@@ -31,50 +33,41 @@
       },
       "diagnostics": {
         "title": "Diagnostics & logging",
-        "description": "Turn on detailed ternopil_grid debug logging for live troubleshooting.",
+        "description": "Enable verbose ternopil_grid debug logging when you need live troubleshooting.",
         "data": {
-          "debug_logging": "Enable detailed debug logging"
+          "debug_logging": "Enable verbose debug logging"
         }
       },
       "ping": {
-        "title": "Ping settings",
-        "description": "Choose how the live power probe should resolve its target.",
+        "title": "Probe behavior",
+        "description": "Configure whether the live power probe is enabled, how it checks for power, and how often it runs.",
         "data": {
-          "ping_enabled": "Enable power ping",
-          "ping_target_source": "Target source",
-          "ping_method": "Ping method",
+          "ping_enabled": "Enable live power probe",
+          "ping_method": "Probe method",
+          "ping_interval": "Check every (s)",
           "ping_timeout": "Timeout (s)",
-          "ping_interval": "Interval (s)",
-          "ping_history_hours": "History window (up to 24h)"
+          "ping_history_hours": "Probe history (hours)"
         }
       },
       "ping_entity": {
-        "title": "Ping settings",
-        "description": "Select the Home Assistant entity that should be used as the live power probe target.",
+        "title": "Device probe target",
+        "description": "Choose the Home Assistant device or entity that should be used as the live power probe target.",
         "data": {
-          "ping_entity_id": "Probe device/entity",
-          "ping_port": "Probe port",
+          "ping_entity_id": "Probe device",
+          "ping_port": "Port",
           "ping_http_ssl": "Use HTTPS for HTTP check",
           "ping_http_path": "HTTP path"
         }
       },
       "ping_manual": {
-        "title": "Ping settings",
-        "description": "Enter the manual target address used for the live power probe.",
+        "title": "Manual IP target",
+        "description": "Enter the IP address used as the live power probe target.",
         "data": {
-          "ping_ip": "Ping target IP",
-          "ping_port": "Probe port",
+          "ping_ip": "Target IP address",
+          "ping_port": "Port",
           "ping_http_ssl": "Use HTTPS for HTTP check",
           "ping_http_path": "HTTP path"
         }
-      }
-    }
-  },
-  "selector": {
-    "ping_target_source": {
-      "options": {
-        "entity": "Probe device / entity",
-        "custom_ip": "Manual / custom IP"
       }
     }
   },

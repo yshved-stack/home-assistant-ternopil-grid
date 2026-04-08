@@ -129,6 +129,24 @@ def _is_ping_candidate_entity(entity_id: str) -> bool:
     return domain in {"switch", "light", "binary_sensor", "device_tracker"}
 
 
+def _should_offer_ping_entity(hass: HomeAssistant, entity_id: str, current_entity_id: str) -> bool:
+    if not _is_ping_candidate_entity(entity_id):
+        return False
+    if entity_id == current_entity_id:
+        return True
+
+    domain = entity_id.partition(".")[0]
+    integration = _integration_label(hass, entity_id).lower()
+    has_ip = bool(_resolve_entity_probe_ip(hass, entity_id))
+    likely_plug = _is_likely_smart_plug(hass, entity_id)
+
+    if integration == "template":
+        return False
+    if domain in {"switch", "light", "device_tracker"}:
+        return True
+    return has_ip or likely_plug
+
+
 def _looks_like_ip(value: str) -> bool:
     try:
         ip_address(value)
@@ -211,18 +229,17 @@ def _entity_picker_label(hass: HomeAssistant, entity_id: str, duplicate_names: s
     friendly_name = str(state.attributes.get("friendly_name") or entity_id).strip() if state is not None else entity_id
     resolved_ip = _resolve_entity_probe_ip(hass, entity_id)
     integration = _integration_label(hass, entity_id)
-    manufacturer, model = _device_summary(hass, entity_id)
     likely_plug = _is_likely_smart_plug(hass, entity_id)
 
     parts: list[str] = []
     if likely_plug:
-        parts.append("Recommended")
+        parts.append("Smart plug")
     parts.append(friendly_name)
-    source_bits = [part for part in (manufacturer, model) if part]
+    source_bits: list[str] = []
+    if integration:
+        source_bits.append(integration.upper())
     if friendly_name.casefold() in duplicate_names and entity_id:
         source_bits.append(entity_id)
-    elif integration:
-        source_bits.append(integration.upper())
     if source_bits:
         parts.append(" / ".join(source_bits))
     if resolved_ip:
@@ -240,7 +257,7 @@ def _ping_entity_options(hass: HomeAssistant, current_entity_id: str) -> dict[st
 
     for state in hass.states.async_all():
         entity_id = state.entity_id
-        if not _is_ping_candidate_entity(entity_id):
+        if not _should_offer_ping_entity(hass, entity_id, current_entity_id):
             continue
         friendly_name = str(state.attributes.get("friendly_name") or entity_id).strip().casefold()
         name_counts[friendly_name] = name_counts.get(friendly_name, 0) + 1
@@ -249,7 +266,7 @@ def _ping_entity_options(hass: HomeAssistant, current_entity_id: str) -> dict[st
 
     for state in hass.states.async_all():
         entity_id = state.entity_id
-        if not _is_ping_candidate_entity(entity_id):
+        if not _should_offer_ping_entity(hass, entity_id, current_entity_id):
             continue
         priority, label = _entity_picker_label(hass, entity_id, duplicate_names)
         candidates.append((priority, label.casefold(), entity_id))
@@ -264,13 +281,6 @@ def _ping_entity_options(hass: HomeAssistant, current_entity_id: str) -> dict[st
 
 def _ping_target_source(options: dict[str, Any]) -> str:
     return PING_TARGET_SOURCE_ENTITY if str(options.get(CONF_PING_ENTITY_ID, "") or "").strip() else PING_TARGET_SOURCE_CUSTOM
-
-
-def _ping_target_source_options() -> list[dict[str, str]]:
-    return [
-        {"value": PING_TARGET_SOURCE_ENTITY, "label": "Probe device / entity"},
-        {"value": PING_TARGET_SOURCE_CUSTOM, "label": "Manual / custom IP"},
-    ]
 
 
 def _autofill_ping_options(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
@@ -330,17 +340,14 @@ def _ping_schema(hass: HomeAssistant, options: dict[str, Any]) -> vol.Schema:
         {
             vol.Optional(CONF_PING_ENABLED, default=normalized[CONF_PING_ENABLED]): bool,
             vol.Optional(CONF_PING_METHOD, default=normalized[CONF_PING_METHOD]): vol.In(PING_METHOD_OPTIONS),
-            vol.Optional("ping_target_source", default=_ping_target_source(normalized)): _select_dropdown(
-                _ping_target_source_options()
-            ),
-            vol.Optional(
-                CONF_PING_TIMEOUT,
-                default=normalized[CONF_PING_TIMEOUT],
-            ): _number_selector(min_value=0.2, max_value=10, step=0.1),
             vol.Optional(
                 CONF_PING_INTERVAL,
                 default=normalized[CONF_PING_INTERVAL],
             ): _number_selector(min_value=1, max_value=300, step=1),
+            vol.Optional(
+                CONF_PING_TIMEOUT,
+                default=normalized[CONF_PING_TIMEOUT],
+            ): _number_selector(min_value=0.2, max_value=10, step=0.1),
             vol.Optional(
                 CONF_PING_HISTORY_HOURS,
                 default=normalized[CONF_PING_HISTORY_HOURS],
@@ -488,7 +495,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self._streets
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        return self.async_show_menu(step_id="init", menu_options=["street", "ping", "diagnostics"])
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["street", "ping", "ping_entity", "ping_manual", "diagnostics"],
+        )
 
     async def async_step_ping(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         options = dict(self.entry.options)
@@ -496,21 +506,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             updated = _normalize_ping_options({**options, **user_input})
             errors: dict[str, str] = {}
-            target_source = str(user_input.get("ping_target_source", _ping_target_source(updated)) or "").strip()
-            if target_source not in {PING_TARGET_SOURCE_ENTITY, PING_TARGET_SOURCE_CUSTOM}:
-                errors["ping_target_source"] = "required"
+            target_source = _ping_target_source(updated)
             if updated[CONF_PING_ENABLED] and target_source == PING_TARGET_SOURCE_CUSTOM and updated[CONF_PING_METHOD] == "entity":
                 errors[CONF_PING_METHOD] = "invalid_target_source"
 
             if not errors:
-                self._ping_working_options = dict(self.entry.options)
-                self._ping_working_options.update(updated)
-                if not updated[CONF_PING_ENABLED]:
-                    return self.async_create_entry(title="", data=self._ping_working_options)
-                if target_source == PING_TARGET_SOURCE_ENTITY:
-                    return await self.async_step_ping_entity()
-                self._ping_working_options[CONF_PING_ENTITY_ID] = ""
-                return await self.async_step_ping_manual()
+                merged = dict(self.entry.options)
+                merged.update(updated)
+                return self.async_create_entry(title="", data=merged)
 
             return self.async_show_form(
                 step_id="ping",

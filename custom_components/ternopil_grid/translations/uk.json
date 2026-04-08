@@ -17,7 +17,9 @@
         "title": "Опції",
         "menu_options": {
           "street": "Змінити вулицю",
-          "ping": "Налаштування ping",
+          "ping": "Поведінка проби",
+          "ping_entity": "Ціль проби: пристрій HA",
+          "ping_manual": "Ціль проби: ручна IP",
           "diagnostics": "Діагностика і логування"
         }
       },
@@ -31,50 +33,41 @@
       },
       "diagnostics": {
         "title": "Діагностика і логування",
-        "description": "Увімкніть детальне debug-логування ternopil_grid для живої діагностики.",
+        "description": "Увімкніть розширене debug-логування ternopil_grid, коли потрібна жива діагностика.",
         "data": {
-          "debug_logging": "Увімкнути детальне debug-логування"
+          "debug_logging": "Увімкнути розширене debug-логування"
         }
       },
       "ping": {
-        "title": "Налаштування ping",
-        "description": "Оберіть, як live-проба має визначати ціль для перевірки наявності світла.",
+        "title": "Поведінка проби",
+        "description": "Налаштуйте, чи увімкнена live-проба, яким методом вона перевіряє наявність світла і як часто запускається.",
         "data": {
-          "ping_enabled": "Увімкнути перевірку (ping)",
-          "ping_target_source": "Джерело цілі",
-          "ping_method": "Метод перевірки",
+          "ping_enabled": "Увімкнути live-пробу",
+          "ping_method": "Метод проби",
+          "ping_interval": "Перевіряти кожні (с)",
           "ping_timeout": "Таймаут (с)",
-          "ping_interval": "Інтервал (с)",
-          "ping_history_hours": "Вікно історії (до 24 годин)"
+          "ping_history_hours": "Історія проби (год)"
         }
       },
       "ping_entity": {
-        "title": "Налаштування ping",
-        "description": "Оберіть Home Assistant пристрій/сутність, яку слід використовувати як live-пробу.",
+        "title": "Ціль проби: пристрій HA",
+        "description": "Оберіть пристрій або сутність Home Assistant, яку слід використовувати як ціль live-проби.",
         "data": {
-          "ping_entity_id": "Пристрій/сутність для проби",
-          "ping_port": "Порт перевірки",
+          "ping_entity_id": "Пристрій для проби",
+          "ping_port": "Порт",
           "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
           "ping_http_path": "HTTP шлях"
         }
       },
       "ping_manual": {
-        "title": "Налаштування ping",
-        "description": "Вкажіть manual IP-адресу для live-проби наявності світла.",
+        "title": "Ціль проби: ручна IP",
+        "description": "Вкажіть IP-адресу, яку слід використовувати як ціль live-проби.",
         "data": {
-          "ping_ip": "IP-адреса для перевірки",
-          "ping_port": "Порт перевірки",
+          "ping_ip": "Цільова IP-адреса",
+          "ping_port": "Порт",
           "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
           "ping_http_path": "HTTP шлях"
         }
-      }
-    }
-  },
-  "selector": {
-    "ping_target_source": {
-      "options": {
-        "entity": "Пристрій / сутність",
-        "custom_ip": "Manual / custom IP"
       }
     }
   },

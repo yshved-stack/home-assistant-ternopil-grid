@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and the project uses Semantic Versioning for public release tags.
 
+## [1.2.2] - 2026-04-09
+
+### Changed
+
+- the HA options dialog now exposes direct menu entries for `Probe behavior`, `Device probe target`, and `Manual IP target`
+- wording in the options flow was polished to make method, timing, and target settings easier to scan
+- the device target picker now filters out irrelevant template sensors and keeps the probe list focused on usable targets
+
+### Fixed
+
+- worked around the HA frontend issue where the earlier target-source subflow did not reliably continue to the second step
+- patch release version updated to `1.2.2`
+
 ## [1.2.1] - 2026-04-09
 
 ### Changed
@@ -44,3 +57,4 @@ The format is based on Keep a Changelog and the project uses Semantic Versioning
 
 [1.2.0]: https://github.com/yshved-stack/home-assistant-ternopil-grid/releases/tag/v1.2.0
 [1.2.1]: https://github.com/yshved-stack/home-assistant-ternopil-grid/releases/tag/v1.2.1
+[1.2.2]: https://github.com/yshved-stack/home-assistant-ternopil-grid/releases/tag/v1.2.2
