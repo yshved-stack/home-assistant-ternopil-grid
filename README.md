@@ -98,14 +98,17 @@ This keeps the export low-noise on stable days while still refreshing regularly 
 
 ## Screenshots
 
-Dashboard overview:
-![Dashboard overview](./docs/screenshots/dashboard-overview.png)
-
-Today schedule card:
-![Today schedule card](./docs/screenshots/today-schedule-card.png)
-
-Earlier schedule card version:
-![Legacy schedule card](./docs/screenshots/legacy-schedule-card.png)
+<p align="center">
+  <img src="./docs/screenshots/dashboard-overview.png" alt="Dashboard overview" width="46%" />
+  <img src="./docs/screenshots/today-schedule-card.png" alt="Today schedule card" width="46%" />
+</p>
+<p align="center">
+  <img src="./docs/screenshots/options-menu.png" alt="Options menu" width="46%" />
+  <img src="./docs/screenshots/legacy-schedule-card.png" alt="Legacy schedule card" width="46%" />
+</p>
+<p align="center">
+  <sub>Dashboard overview and current schedule cards, plus the options menu and an earlier card version.</sub>
+</p>
 
 ## HACS
 
