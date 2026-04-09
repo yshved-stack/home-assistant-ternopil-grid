@@ -22,6 +22,10 @@ Intended public repo name: `home-assistant-ternopil-grid`.
   - the current `Power Grid` dashboard block
 - `examples/lease-source.example.json`
   - portable sample input for the external DHCP / lease resolver
+- `tools/export_oe_outage_data.py`
+  - standalone export to `OE_OUTAGE_DATA`-compatible JSON
+- `data/Ternopil.json`
+  - generated outage snapshot for external consumers
 - `LICENSE`
 - `CHANGELOG.md`
 
@@ -69,7 +73,17 @@ Those stay in the main `HomeLAB` repo because they are environment-specific.
 python -m compileall .\custom_components\ternopil_grid
 python .\custom_components\ternopil_grid\tools\verify_const_contract.py
 python .\custom_components\ternopil_grid\tools\verify_repo_assets.py
+python .\tools\export_oe_outage_data.py
 ```
+
+## OE_OUTAGE_DATA Export
+
+- generated file path: `data/Ternopil.json`
+- generator: `tools/export_oe_outage_data.py`
+- source: live PowerOn API for Ternopil streets, outage groups, and schedules
+- update model: `.github/workflows/update-oe-outage-data.yml` polls hourly and commits only when the exported JSON actually changes
+
+This gives a quiet baseline on stable days and naturally increases update frequency on volatile days, while still staying below one publish per hour.
 
 ## Home Assistant Install
 
