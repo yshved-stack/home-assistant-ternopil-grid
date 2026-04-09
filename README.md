@@ -3,6 +3,7 @@
 [![Validate](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml)
 [![OE Data Check](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml)
 [![OE Data Update](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml)
+[![OE Live Smoke](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-live-smoke.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-live-smoke.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 [![License](https://img.shields.io/github/license/yshved-stack/home-assistant-ternopil-grid)](./LICENSE)
 

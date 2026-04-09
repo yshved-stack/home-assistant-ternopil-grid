@@ -1,0 +1,40 @@
+name: OE Live Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 */6 * * *"
+
+jobs:
+  smoke-live-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run live export smoke-check
+        run: python ./tools/export_oe_outage_data.py --output ./tmp/Ternopil.smoke.json
+
+      - name: Validate live smoke payload
+        run: |
+          python ./tools/verify_oe_outage_data.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("tmp/Ternopil.smoke.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          if payload.get("regionId") != "Ternopil":
+              raise SystemExit("live smoke payload regionId mismatch")
+          fact = payload.get("fact") or {}
+          data = fact.get("data") or {}
+          if not data:
+              raise SystemExit("live smoke payload has empty fact.data")
+          print("OK: live smoke payload looks healthy.")
+          PY
