@@ -170,7 +170,8 @@ async def fetch_building_groups(hass, city_id: int, street_id: int) -> list[str]
 
 async def fetch_building_group(hass, city_id: int, street_id: int) -> str:
     groups = await fetch_building_groups(hass, city_id, street_id)
-    return groups[0] if groups else ""
+    unique_groups = list(dict.fromkeys(group for group in groups if isinstance(group, str) and group.strip()))
+    return unique_groups[0] if len(unique_groups) == 1 else ""
 
 
 def _utc_day_start(now: datetime) -> datetime:

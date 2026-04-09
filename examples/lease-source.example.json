@@ -1,0 +1,12 @@
+[
+  {
+    "hostname": "ESP_B168F4",
+    "mac": "84:0d:8e:b1:68:f4",
+    "ip": "192.168.20.96",
+    "entity_id": "switch.softlight_socket_1"
+  },
+  {
+    "hostname": "plug-office",
+    "ip": "10.20.30.40"
+  }
+]

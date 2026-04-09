@@ -138,7 +138,15 @@ class TGPingBinary(CoordinatorEntity, BinarySensorEntity):
             updated_at = self.coordinator.last_update_success_time.isoformat()
         return {
             "ip": data.get("ip"),
+            "effective_ip": data.get("ip"),
             "configured_ip": data.get("configured_ip"),
+            "resolved_target_ip": data.get("resolved_target_ip"),
+            "dhcp_target_ip": data.get("dhcp_target_ip"),
+            "dhcp_match_mode": data.get("dhcp_match_mode"),
+            "dhcp_source": data.get("dhcp_source"),
+            "dhcp_lookup": data.get("dhcp_lookup"),
+            "dhcp_target": data.get("dhcp_target"),
+            "target_ip_source": data.get("target_ip_source"),
             "port": data.get("port"),
             "method": data.get("method"),
             "timeout": data.get("timeout"),

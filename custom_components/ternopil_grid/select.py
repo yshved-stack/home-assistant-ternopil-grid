@@ -19,9 +19,7 @@ from .const import (
     DEFAULT_TERNOPIL_CITY_ID,
     DOMAIN,
     ENTITY_PREFIX,
-    STORE_LEGACY_PING,
     STORE_LEGACY_SCHEDULE,
-    STORE_PING_COORDINATOR,
     STORE_SCHEDULE_COORDINATOR,
 )
 
@@ -179,11 +177,8 @@ class TernopilStreetSelect(_BaseTernopilSelect):
 
         store = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id, {})
         schedule = store.get(STORE_SCHEDULE_COORDINATOR) or store.get(STORE_LEGACY_SCHEDULE)
-        ping = store.get(STORE_PING_COORDINATOR) or store.get(STORE_LEGACY_PING)
         if schedule:
             await schedule.async_request_refresh()
-        if ping:
-            await ping.async_request_refresh()
 
 
 class TernopilOutageGroupSelect(_BaseTernopilSelect):

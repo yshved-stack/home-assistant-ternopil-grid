@@ -20,6 +20,7 @@
           "ping": "Probe behavior",
           "ping_entity": "Device probe target",
           "ping_manual": "Manual IP target",
+          "resolver": "DHCP / lease resolver",
           "diagnostics": "Diagnostics & logging"
         }
       },
@@ -68,10 +69,26 @@
           "ping_http_ssl": "Use HTTPS for HTTP check",
           "ping_http_path": "HTTP path"
         }
+      },
+      "resolver": {
+        "title": "DHCP / lease resolver",
+        "description": "Optionally resolve the probe target from an external lease source. Resolution order is entity IP, then DHCP/lease data, then the saved fallback IP.",
+        "data": {
+          "ping_dhcp_source": "Lease source",
+          "ping_dhcp_lookup": "Lookup strategy",
+          "ping_dhcp_target": "Lookup override",
+          "ping_dhcp_url": "Lease JSON URL",
+          "ping_dhcp_file": "Lease JSON file path"
+        }
       }
     }
   },
   "error": {
-    "invalid_target_source": "Entity status method requires a probe device/entity target."
+    "invalid_target_source": "Entity status method requires a probe device/entity target.",
+    "invalid_ip": "Enter a valid IP address.",
+    "invalid_url": "Enter a valid http:// or https:// URL.",
+    "invalid_mac": "Enter a valid MAC address.",
+    "entity_requires_explicit_fallback": "This device has no IP in Home Assistant. Re-save Manual IP target for this device or enable the DHCP / lease resolver first.",
+    "entity_missing_ip": "The selected device does not expose a usable IP address."
   }
 }

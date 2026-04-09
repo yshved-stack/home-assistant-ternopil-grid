@@ -20,6 +20,7 @@
           "ping": "Поведінка проби",
           "ping_entity": "Ціль проби: пристрій HA",
           "ping_manual": "Ціль проби: ручна IP",
+          "resolver": "DHCP / lease resolver",
           "diagnostics": "Діагностика і логування"
         }
       },
@@ -68,10 +69,26 @@
           "ping_http_ssl": "Використовувати HTTPS для HTTP перевірки",
           "ping_http_path": "HTTP шлях"
         }
+      },
+      "resolver": {
+        "title": "DHCP / lease resolver",
+        "description": "За потреби резолвіть ціль проби з зовнішнього джерела lease-даних. Порядок: IP з entity, потім DHCP/lease дані, потім збережена fallback IP.",
+        "data": {
+          "ping_dhcp_source": "Джерело lease-даних",
+          "ping_dhcp_lookup": "Стратегія пошуку",
+          "ping_dhcp_target": "Override для пошуку",
+          "ping_dhcp_url": "URL JSON з lease-даними",
+          "ping_dhcp_file": "Шлях до JSON-файлу lease-даних"
+        }
       }
     }
   },
   "error": {
-    "invalid_target_source": "Метод entity status вимагає вибраний пристрій/сутність для проби."
+    "invalid_target_source": "Метод entity status вимагає вибраний пристрій/сутність для проби.",
+    "invalid_ip": "Вкажіть коректну IP-адресу.",
+    "invalid_url": "Вкажіть коректний URL http:// або https://.",
+    "invalid_mac": "Вкажіть коректну MAC-адресу.",
+    "entity_requires_explicit_fallback": "Цей пристрій не віддає IP у Home Assistant. Спершу збережіть Manual IP target саме для нього або увімкніть DHCP / lease resolver.",
+    "entity_missing_ip": "Обраний пристрій не віддає придатну IP-адресу."
   }
 }

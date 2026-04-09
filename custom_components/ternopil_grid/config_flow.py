@@ -18,6 +18,11 @@ from .const import (
     CONF_DEBUG_LOGGING,
     CONF_GROUP,
     CONF_HOUSE_NUMBER,
+    CONF_PING_DHCP_FILE,
+    CONF_PING_DHCP_LOOKUP,
+    CONF_PING_DHCP_SOURCE,
+    CONF_PING_DHCP_TARGET,
+    CONF_PING_DHCP_URL,
     CONF_PING_ENABLED,
     CONF_PING_ENTITY_ID,
     CONF_PING_HISTORY_HOURS,
@@ -32,6 +37,11 @@ from .const import (
     CONF_STREET_NAME,
     DEFAULT_PING_ENABLED,
     DEFAULT_DEBUG_LOGGING,
+    DEFAULT_PING_DHCP_FILE,
+    DEFAULT_PING_DHCP_LOOKUP,
+    DEFAULT_PING_DHCP_SOURCE,
+    DEFAULT_PING_DHCP_TARGET,
+    DEFAULT_PING_DHCP_URL,
     DEFAULT_PING_HISTORY_HOURS,
     DEFAULT_PING_HTTP_PATH,
     DEFAULT_PING_HTTP_SSL,
@@ -43,7 +53,11 @@ from .const import (
     DEFAULT_TERNOPIL_CITY_ID,
     DOMAIN,
     MAX_PING_HISTORY_HOURS,
+    PING_DHCP_LOOKUP_OPTIONS,
+    PING_DHCP_SOURCE_OPTIONS,
     PING_METHOD_OPTIONS,
+    STORE_LEGACY_SCHEDULE,
+    STORE_SCHEDULE_COORDINATOR,
 )
 
 PING_TARGET_SOURCE_ENTITY = "entity"
@@ -155,6 +169,11 @@ def _looks_like_ip(value: str) -> bool:
     return True
 
 
+def _looks_like_mac(value: str) -> bool:
+    cleaned = "".join(ch for ch in str(value or "") if ch.isalnum()).lower()
+    return len(cleaned) == 12 and all(ch in "0123456789abcdef" for ch in cleaned)
+
+
 def _resolve_entity_probe_ip(hass: HomeAssistant, entity_id: str) -> str:
     state = hass.states.get(entity_id)
     if state is None:
@@ -224,7 +243,13 @@ def _is_likely_smart_plug(hass: HomeAssistant, entity_id: str) -> bool:
     return domain == "switch" and (keyword_hit or tuya_hint)
 
 
-def _entity_picker_label(hass: HomeAssistant, entity_id: str, duplicate_names: set[str]) -> tuple[int, str]:
+def _entity_picker_label(
+    hass: HomeAssistant,
+    entity_id: str,
+    duplicate_names: set[str],
+    current_entity_id: str,
+    current_configured_ip: str,
+) -> tuple[int, str]:
     state = hass.states.get(entity_id)
     friendly_name = str(state.attributes.get("friendly_name") or entity_id).strip() if state is not None else entity_id
     resolved_ip = _resolve_entity_probe_ip(hass, entity_id)
@@ -244,13 +269,17 @@ def _entity_picker_label(hass: HomeAssistant, entity_id: str, duplicate_names: s
         parts.append(" / ".join(source_bits))
     if resolved_ip:
         parts.append(resolved_ip)
+    elif entity_id == current_entity_id and _looks_like_ip(current_configured_ip):
+        parts.append(f"saved IP {current_configured_ip}")
+    else:
+        parts.append("no IP in HA")
     label = " · ".join(parts)
 
     priority = 0 if likely_plug else 1
     return priority, label
 
 
-def _ping_entity_options(hass: HomeAssistant, current_entity_id: str) -> dict[str, str]:
+def _ping_entity_options(hass: HomeAssistant, current_entity_id: str, current_configured_ip: str = "") -> dict[str, str]:
     options: dict[str, str] = {}
     candidates: list[tuple[int, str, str]] = []
     name_counts: dict[str, int] = {}
@@ -268,11 +297,17 @@ def _ping_entity_options(hass: HomeAssistant, current_entity_id: str) -> dict[st
         entity_id = state.entity_id
         if not _should_offer_ping_entity(hass, entity_id, current_entity_id):
             continue
-        priority, label = _entity_picker_label(hass, entity_id, duplicate_names)
+        priority, label = _entity_picker_label(hass, entity_id, duplicate_names, current_entity_id, current_configured_ip)
         candidates.append((priority, label.casefold(), entity_id))
 
     for _, _, entity_id in sorted(candidates):
-        options[entity_id] = _entity_picker_label(hass, entity_id, duplicate_names)[1]
+        options[entity_id] = _entity_picker_label(
+            hass,
+            entity_id,
+            duplicate_names,
+            current_entity_id,
+            current_configured_ip,
+        )[1]
 
     if current_entity_id and current_entity_id not in options:
         options[current_entity_id] = current_entity_id
@@ -302,10 +337,23 @@ def _autofill_ping_options(hass: HomeAssistant, options: dict[str, Any]) -> dict
     return updated
 
 
+def _entity_requires_ip(options: dict[str, Any]) -> bool:
+    method = str(options.get(CONF_PING_METHOD, DEFAULT_PING_METHOD) or DEFAULT_PING_METHOD).lower().strip()
+    return method in {"icmp", "tcp", "http"}
+
+
 def _normalize_ping_options(options: dict[str, Any]) -> dict[str, Any]:
     method = str(options.get(CONF_PING_METHOD, DEFAULT_PING_METHOD) or DEFAULT_PING_METHOD).lower().strip()
     if method not in PING_METHOD_OPTIONS:
         method = DEFAULT_PING_METHOD
+
+    dhcp_source = str(options.get(CONF_PING_DHCP_SOURCE, DEFAULT_PING_DHCP_SOURCE) or DEFAULT_PING_DHCP_SOURCE).lower().strip()
+    if dhcp_source not in PING_DHCP_SOURCE_OPTIONS:
+        dhcp_source = DEFAULT_PING_DHCP_SOURCE
+
+    dhcp_lookup = str(options.get(CONF_PING_DHCP_LOOKUP, DEFAULT_PING_DHCP_LOOKUP) or DEFAULT_PING_DHCP_LOOKUP).lower().strip()
+    if dhcp_lookup not in PING_DHCP_LOOKUP_OPTIONS:
+        dhcp_lookup = DEFAULT_PING_DHCP_LOOKUP
 
     path = str(options.get(CONF_PING_HTTP_PATH, DEFAULT_PING_HTTP_PATH) or DEFAULT_PING_HTTP_PATH).strip() or "/"
     if not path.startswith("/"):
@@ -322,6 +370,11 @@ def _normalize_ping_options(options: dict[str, Any]) -> dict[str, Any]:
             float(options.get(CONF_PING_TIMEOUT, DEFAULT_PING_TIMEOUT) or DEFAULT_PING_TIMEOUT),
         ),
         CONF_PING_INTERVAL: max(1, int(options.get(CONF_PING_INTERVAL, DEFAULT_PING_INTERVAL) or DEFAULT_PING_INTERVAL)),
+        CONF_PING_DHCP_SOURCE: dhcp_source,
+        CONF_PING_DHCP_LOOKUP: dhcp_lookup,
+        CONF_PING_DHCP_TARGET: str(options.get(CONF_PING_DHCP_TARGET, DEFAULT_PING_DHCP_TARGET) or "").strip(),
+        CONF_PING_DHCP_URL: str(options.get(CONF_PING_DHCP_URL, DEFAULT_PING_DHCP_URL) or "").strip(),
+        CONF_PING_DHCP_FILE: str(options.get(CONF_PING_DHCP_FILE, DEFAULT_PING_DHCP_FILE) or "").strip(),
         CONF_PING_HTTP_SSL: bool(options.get(CONF_PING_HTTP_SSL, DEFAULT_PING_HTTP_SSL)),
         CONF_PING_HTTP_PATH: path,
         CONF_PING_HISTORY_HOURS: max(
@@ -358,7 +411,11 @@ def _ping_schema(hass: HomeAssistant, options: dict[str, Any]) -> vol.Schema:
 
 def _ping_entity_schema(hass: HomeAssistant, options: dict[str, Any]) -> vol.Schema:
     normalized = _normalize_ping_options(options)
-    entity_options = _ping_entity_options(hass, normalized.get(CONF_PING_ENTITY_ID, ""))
+    entity_options = _ping_entity_options(
+        hass,
+        normalized.get(CONF_PING_ENTITY_ID, ""),
+        normalized.get(CONF_PING_IP, ""),
+    )
     schema: dict[Any, Any] = {
         vol.Required(
             CONF_PING_ENTITY_ID,
@@ -393,6 +450,20 @@ def _ping_manual_schema(options: dict[str, Any]) -> vol.Schema:
     if normalized[CONF_PING_METHOD] == "http":
         schema[vol.Optional(CONF_PING_HTTP_SSL, default=normalized[CONF_PING_HTTP_SSL])] = bool
         schema[vol.Optional(CONF_PING_HTTP_PATH, default=normalized[CONF_PING_HTTP_PATH])] = _text_selector()
+    return vol.Schema(schema)
+
+
+def _resolver_schema(options: dict[str, Any]) -> vol.Schema:
+    normalized = _normalize_ping_options(options)
+    schema: dict[Any, Any] = {
+        vol.Optional(CONF_PING_DHCP_SOURCE, default=normalized[CONF_PING_DHCP_SOURCE]): vol.In(PING_DHCP_SOURCE_OPTIONS),
+        vol.Optional(CONF_PING_DHCP_LOOKUP, default=normalized[CONF_PING_DHCP_LOOKUP]): vol.In(PING_DHCP_LOOKUP_OPTIONS),
+        vol.Optional(CONF_PING_DHCP_TARGET, default=normalized[CONF_PING_DHCP_TARGET]): _text_selector(),
+    }
+    if normalized[CONF_PING_DHCP_SOURCE] == "json_url":
+        schema[vol.Required(CONF_PING_DHCP_URL, default=normalized[CONF_PING_DHCP_URL])] = _text_selector()
+    if normalized[CONF_PING_DHCP_SOURCE] == "json_file":
+        schema[vol.Required(CONF_PING_DHCP_FILE, default=normalized[CONF_PING_DHCP_FILE])] = _text_selector()
     return vol.Schema(schema)
 
 
@@ -457,6 +528,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_STREET_ID: street_id,
                         CONF_DEBUG_LOGGING: DEFAULT_DEBUG_LOGGING,
+                        CONF_PING_DHCP_SOURCE: DEFAULT_PING_DHCP_SOURCE,
+                        CONF_PING_DHCP_LOOKUP: DEFAULT_PING_DHCP_LOOKUP,
+                        CONF_PING_DHCP_TARGET: DEFAULT_PING_DHCP_TARGET,
+                        CONF_PING_DHCP_URL: DEFAULT_PING_DHCP_URL,
+                        CONF_PING_DHCP_FILE: DEFAULT_PING_DHCP_FILE,
                         CONF_PING_ENABLED: DEFAULT_PING_ENABLED,
                         CONF_PING_ENTITY_ID: "",
                         CONF_PING_IP: DEFAULT_PING_IP,
@@ -497,7 +573,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         return self.async_show_menu(
             step_id="init",
-            menu_options=["street", "ping", "ping_entity", "ping_manual", "diagnostics"],
+            menu_options=["street", "ping", "ping_entity", "ping_manual", "resolver", "diagnostics"],
         )
 
     async def async_step_ping(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -529,9 +605,33 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             updated = _normalize_ping_options({**options, **user_input})
             updated = _autofill_ping_options(self.hass, updated)
             errors: dict[str, str] = {}
-            if not updated[CONF_PING_ENTITY_ID]:
+            entity_id = str(updated[CONF_PING_ENTITY_ID] or "").strip()
+            previous_entity_id = str(self.entry.options.get(CONF_PING_ENTITY_ID, "") or "").strip()
+            resolved_ip = _resolve_entity_probe_ip(self.hass, entity_id) if entity_id else ""
+            configured_ip = str(updated.get(CONF_PING_IP, "") or "").strip()
+            dhcp_enabled = str(
+                updated.get(CONF_PING_DHCP_SOURCE, DEFAULT_PING_DHCP_SOURCE) or DEFAULT_PING_DHCP_SOURCE
+            ) != "disabled"
+            if not entity_id:
                 errors[CONF_PING_ENTITY_ID] = "required"
+            elif (
+                _entity_requires_ip(updated)
+                and entity_id != previous_entity_id
+                and not resolved_ip
+                and _looks_like_ip(configured_ip)
+                and not dhcp_enabled
+            ):
+                errors[CONF_PING_ENTITY_ID] = "entity_requires_explicit_fallback"
+            elif (
+                _entity_requires_ip(updated)
+                and not resolved_ip
+                and not _looks_like_ip(configured_ip)
+                and not dhcp_enabled
+            ):
+                errors[CONF_PING_ENTITY_ID] = "entity_missing_ip"
             if not errors:
+                if resolved_ip:
+                    updated[CONF_PING_IP] = resolved_ip
                 merged = dict(self.entry.options)
                 merged.update(updated)
                 return self.async_create_entry(title="", data=merged)
@@ -548,8 +648,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             updated = _normalize_ping_options({**options, **user_input, CONF_PING_ENTITY_ID: ""})
             errors: dict[str, str] = {}
-            if not updated[CONF_PING_IP]:
+            ip_value = str(updated[CONF_PING_IP] or "").strip()
+            if not ip_value:
                 errors[CONF_PING_IP] = "required"
+            elif not _looks_like_ip(ip_value):
+                errors[CONF_PING_IP] = "invalid_ip"
+            if updated[CONF_PING_METHOD] == "entity":
+                errors[CONF_PING_IP] = "invalid_target_source"
             if not errors:
                 merged = dict(self.entry.options)
                 merged.update(updated)
@@ -561,6 +666,44 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         return self.async_show_form(step_id="ping_manual", data_schema=_ping_manual_schema(options))
+
+    async def async_step_resolver(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        options = _normalize_ping_options(self._ping_working_options or dict(self.entry.options))
+        if user_input is not None:
+            updated = _normalize_ping_options({**options, **user_input})
+            errors: dict[str, str] = {}
+            source = str(updated[CONF_PING_DHCP_SOURCE] or DEFAULT_PING_DHCP_SOURCE).strip()
+            override = str(updated[CONF_PING_DHCP_TARGET] or "").strip()
+            lookup = str(updated[CONF_PING_DHCP_LOOKUP] or DEFAULT_PING_DHCP_LOOKUP).strip()
+
+            if source == "json_url":
+                url = str(updated[CONF_PING_DHCP_URL] or "").strip()
+                if not url:
+                    errors[CONF_PING_DHCP_URL] = "required"
+                elif not url.lower().startswith(("http://", "https://")):
+                    errors[CONF_PING_DHCP_URL] = "invalid_url"
+
+            if source == "json_file" and not str(updated[CONF_PING_DHCP_FILE] or "").strip():
+                errors[CONF_PING_DHCP_FILE] = "required"
+
+            if source != "disabled" and not str(updated.get(CONF_PING_ENTITY_ID, "") or "").strip() and not override:
+                errors[CONF_PING_DHCP_TARGET] = "required"
+
+            if source != "disabled" and lookup == "mac" and override and not _looks_like_mac(override):
+                errors[CONF_PING_DHCP_TARGET] = "invalid_mac"
+
+            if not errors:
+                merged = dict(self.entry.options)
+                merged.update(updated)
+                return self.async_create_entry(title="", data=merged)
+
+            return self.async_show_form(
+                step_id="resolver",
+                data_schema=_resolver_schema(updated),
+                errors=errors,
+            )
+
+        return self.async_show_form(step_id="resolver", data_schema=_resolver_schema(options))
 
     async def async_step_diagnostics(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         options = dict(self.entry.options)
@@ -609,7 +752,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
                 title = street_name if not self._house_number.strip() else f"{street_name}, {self._house_number.strip()}"
                 self.hass.config_entries.async_update_entry(self.entry, data=data, options=options, title=title)
-                self.hass.async_create_task(self.hass.config_entries.async_reload(self.entry.entry_id))
+                store = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id, {})
+                schedule = store.get(STORE_SCHEDULE_COORDINATOR) or store.get(STORE_LEGACY_SCHEDULE)
+                if schedule:
+                    await schedule.async_request_refresh()
                 return self.async_create_entry(title="", data=options)
 
         return self.async_show_form(

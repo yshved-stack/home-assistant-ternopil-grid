@@ -1,0 +1,27 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile integration
+        run: python -m compileall ./custom_components/ternopil_grid
+
+      - name: Verify const contract
+        run: python ./custom_components/ternopil_grid/tools/verify_const_contract.py
+
+      - name: Verify repository assets
+        run: python ./custom_components/ternopil_grid/tools/verify_repo_assets.py

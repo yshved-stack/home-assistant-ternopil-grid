@@ -1,4 +1,5 @@
 [![GitHub Release](https://img.shields.io/github/v/release/yshved-stack/home-assistant-ternopil-grid?sort=semver)](https://github.com/yshved-stack/home-assistant-ternopil-grid/releases)
+[![Validate](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 [![License](https://img.shields.io/github/license/yshved-stack/home-assistant-ternopil-grid)](./LICENSE)
 
@@ -19,6 +20,8 @@ Intended public repo name: `home-assistant-ternopil-grid`.
   - the const-contract check script
 - `examples/power-grid-card.yaml`
   - the current `Power Grid` dashboard block
+- `examples/lease-source.example.json`
+  - portable sample input for the external DHCP / lease resolver
 - `LICENSE`
 - `CHANGELOG.md`
 
@@ -65,6 +68,7 @@ Those stay in the main `HomeLAB` repo because they are environment-specific.
 ```powershell
 python -m compileall .\custom_components\ternopil_grid
 python .\custom_components\ternopil_grid\tools\verify_const_contract.py
+python .\custom_components\ternopil_grid\tools\verify_repo_assets.py
 ```
 
 ## Home Assistant Install
@@ -84,11 +88,34 @@ Add this repo to HACS as a custom integration repository:
 ## Releases
 
 - release tags follow the integration version from `custom_components/ternopil_grid/manifest.json`
-- current public release tag: `v1.2.2`
+- current public release tag: `v1.2.3`
 - human-readable release notes live in [CHANGELOG.md](./CHANGELOG.md)
 
 ## Notes
 
 - Street selection stays in the integration settings and as a config `select` entity.
 - The live power probe can use ICMP, TCP, HTTP, or entity-state checks.
+- Optional external lease resolution is available for standalone installs via `DHCP / lease resolver`.
+- Resolver order is `entity IP -> DHCP/lease source -> saved manual fallback IP`.
+- `house_number` is currently stored for context/title only. If a street maps to multiple outage groups, select the correct `Outage Group` explicitly until the upstream API exposes house-level resolution.
 - The dashboard block is intentionally focused on the outage view only; broader homelab logic belongs in the parent repo.
+
+## External Lease Resolution
+
+When a selected Home Assistant device does not expose its IP directly, the integration can optionally resolve it from an external lease source.
+
+Supported source types:
+
+- `Lease JSON URL`
+- `Lease JSON file path`
+
+Supported lookup strategies:
+
+- `auto`
+- `hostname`
+- `mac`
+- `entity_id`
+
+You can also provide an optional `Lookup override` when the automatic hints from the selected entity are not enough.
+
+Example lease payload: [examples/lease-source.example.json](./examples/lease-source.example.json)

@@ -37,6 +37,11 @@ CONF_PING_ENTITY_ID = "ping_entity_id"
 CONF_PING_HTTP_SSL = "ping_http_ssl"
 CONF_PING_HTTP_PATH = "ping_http_path"
 CONF_PING_HISTORY_HOURS = "ping_history_hours"
+CONF_PING_DHCP_SOURCE = "ping_dhcp_source"
+CONF_PING_DHCP_LOOKUP = "ping_dhcp_lookup"
+CONF_PING_DHCP_TARGET = "ping_dhcp_target"
+CONF_PING_DHCP_URL = "ping_dhcp_url"
+CONF_PING_DHCP_FILE = "ping_dhcp_file"
 CONF_DEBUG_LOGGING = "debug_logging"
 
 # Ping defaults
@@ -49,8 +54,17 @@ DEFAULT_PING_TIMEOUT = 1.0  # seconds
 DEFAULT_PING_HTTP_SSL = False
 DEFAULT_PING_HTTP_PATH = "/"
 DEFAULT_PING_HISTORY_HOURS = 24
+DEFAULT_PING_DHCP_SOURCE = "disabled"
+DEFAULT_PING_DHCP_LOOKUP = "auto"
+DEFAULT_PING_DHCP_TARGET = ""
+DEFAULT_PING_DHCP_URL = ""
+DEFAULT_PING_DHCP_FILE = ""
 DEFAULT_DEBUG_LOGGING = False
 MAX_PING_HISTORY_HOURS = 24
+DEFAULT_DHCP_CACHE_TTL = 60
+DEFAULT_DHCP_REQUEST_TIMEOUT = 5.0
+PING_DHCP_SOURCE_OPTIONS = ["disabled", "json_url", "json_file"]
+PING_DHCP_LOOKUP_OPTIONS = ["auto", "hostname", "mac", "entity_id"]
 
 # hass.data keys
 STORE_SCHEDULE_COORDINATOR = "schedule_coordinator"
