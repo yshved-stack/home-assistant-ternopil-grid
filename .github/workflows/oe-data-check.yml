@@ -1,0 +1,25 @@
+name: OE Data Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-oe-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile export tool
+        run: python -m py_compile ./tools/export_oe_outage_data.py ./tools/verify_oe_outage_data.py
+
+      - name: Validate checked-in OE data payload
+        run: python ./tools/verify_oe_outage_data.py

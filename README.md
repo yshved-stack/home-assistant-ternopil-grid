@@ -1,5 +1,8 @@
 [![GitHub Release](https://img.shields.io/github/v/release/yshved-stack/home-assistant-ternopil-grid?sort=semver)](https://github.com/yshved-stack/home-assistant-ternopil-grid/releases)
+[![Tag](https://img.shields.io/badge/tag-v1.2.4-blue)](https://github.com/yshved-stack/home-assistant-ternopil-grid/releases/tag/v1.2.4)
 [![Validate](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml)
+[![OE Data Check](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml)
+[![OE Data Update](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 [![License](https://img.shields.io/github/license/yshved-stack/home-assistant-ternopil-grid)](./LICENSE)
 
@@ -73,6 +76,7 @@ Those stay in the main `HomeLAB` repo because they are environment-specific.
 python -m compileall .\custom_components\ternopil_grid
 python .\custom_components\ternopil_grid\tools\verify_const_contract.py
 python .\custom_components\ternopil_grid\tools\verify_repo_assets.py
+python .\tools\verify_oe_outage_data.py
 python .\tools\export_oe_outage_data.py
 ```
 

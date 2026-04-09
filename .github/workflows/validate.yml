@@ -18,7 +18,7 @@ jobs:
           python-version: "3.12"
 
       - name: Compile integration
-        run: python -m compileall ./custom_components/ternopil_grid
+        run: python -m compileall ./custom_components/ternopil_grid ./tools/export_oe_outage_data.py
 
       - name: Verify const contract
         run: python ./custom_components/ternopil_grid/tools/verify_const_contract.py
