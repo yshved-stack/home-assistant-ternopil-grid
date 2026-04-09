@@ -81,9 +81,9 @@ python .\tools\export_oe_outage_data.py
 - generated file path: `data/Ternopil.json`
 - generator: `tools/export_oe_outage_data.py`
 - source: live PowerOn API for Ternopil streets, outage groups, and schedules
-- update model: `.github/workflows/update-oe-outage-data.yml` polls hourly and commits only when the exported JSON actually changes
+- update model: `.github/workflows/update-oe-outage-data.yml` polls every 6 hours and commits only when the exported JSON actually changes
 
-This gives a quiet baseline on stable days and naturally increases update frequency on volatile days, while still staying below one publish per hour.
+This keeps the export low-noise on stable days while still refreshing regularly from the live PowerOn API.
 
 ## Home Assistant Install
 

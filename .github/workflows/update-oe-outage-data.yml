@@ -3,7 +3,7 @@ name: Update OE Outage Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: write
