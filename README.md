@@ -1,5 +1,4 @@
 [![GitHub Release](https://img.shields.io/github/v/release/yshved-stack/home-assistant-ternopil-grid?sort=semver)](https://github.com/yshved-stack/home-assistant-ternopil-grid/releases)
-[![Tag](https://img.shields.io/badge/tag-v1.2.4-blue)](https://github.com/yshved-stack/home-assistant-ternopil-grid/releases/tag/v1.2.4)
 [![Validate](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/validate.yml)
 [![OE Data Check](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/oe-data-check.yml)
 [![OE Data Update](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml/badge.svg)](https://github.com/yshved-stack/home-assistant-ternopil-grid/actions/workflows/update-oe-outage-data.yml)
@@ -96,6 +95,17 @@ This keeps the export low-noise on stable days while still refreshing regularly 
 2. Restart Home Assistant.
 3. Add the `Ternopil Grid Schedule` integration from the UI.
 4. Optionally import or adapt `examples/power-grid-card.yaml` into your dashboard.
+
+## Screenshots
+
+Dashboard overview:
+![Dashboard overview](./docs/screenshots/dashboard-overview.png)
+
+Today schedule card:
+![Today schedule card](./docs/screenshots/today-schedule-card.png)
+
+Earlier schedule card version:
+![Legacy schedule card](./docs/screenshots/legacy-schedule-card.png)
 
 ## HACS
 
