@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and the project uses Semantic Versioning for public release tags.
 
+## [1.2.4] - 2026-04-09
+
+### Added
+
+- standalone `OE_OUTAGE_DATA` export generator for Ternopil schedules
+- GitHub Actions updater for publishing the generated outage JSON on a fixed schedule
+- richer runtime health and diagnostics surfaces for schedule/probe troubleshooting
+
+### Changed
+
+- options flow now exposes cleaner direct probe/resolver menu paths
+- probe target resolution is safer and prefers entity IP, then DHCP/lease lookup, then configured fallback
+- Home Assistant deploy verification now waits for entities to reappear after restart instead of failing on a transient `404`
+
+### Fixed
+
+- group detection now fails closed for ambiguous streets instead of silently binding the first returned group
+- schedule/dashboard state refresh paths no longer force unrelated probe churn
+- generated outage export commits only when the actual schedule payload changes
 ## [1.2.3] - 2026-04-09
 
 ### Added
